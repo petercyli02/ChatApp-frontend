@@ -10,6 +10,7 @@ import LoginPage from "./pages/LoginPage.tsx";
 import ChatsPage from "./pages/ChatsPage.tsx";
 import { InvitationProvider } from "./contexts/InvitationContext.tsx";
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { ChatRoomProvider } from "./contexts/ChatRoomContext.tsx";
 
 /**
  * LESSON: Router Setup with Auth
@@ -62,11 +63,13 @@ const router = createBrowserRouter([
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
+    <ChatRoomProvider>
         <InvitationProvider>
           <TooltipProvider>
             <RouterProvider router={router} />
           </TooltipProvider>
         </InvitationProvider>
+      </ChatRoomProvider>
     </AuthProvider>
   </StrictMode>,
 );

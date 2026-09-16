@@ -266,11 +266,15 @@ export function useWebSocket({
 
 export function useRealtime() {
   const { refresh } = useInvitation();
-  const { fetchRooms, selectRoom } = useChatRoom();
-  const { roomId } = useChatRoom();
-  const { refetchAdminIds } = useChatRoom();
+  const { roomId, fetchRooms, selectRoom, refetchAdminIds } = useChatRoom();
   const { user } = useAuth();
   const wsRef = useRef<WebSocket | null>(null);
+
+  const roomIdRef = useRef(roomId);
+  roomIdRef.current = roomId;
+
+  const refetchAdminIdsRef = useRef(refetchAdminIds);
+  refetchAdminIdsRef.current = refetchAdminIds;
 
   const connect = useCallback(async () => {
     const token = await auth.currentUser?.getIdToken();
@@ -281,6 +285,7 @@ export function useRealtime() {
     const wsUrl = `ws://localhost:8000/ws?token=${token}`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
+
     ws.onmessage = (e) => {
       const event = JSON.parse(e.data);
       switch (event.type) {
@@ -299,7 +304,8 @@ export function useRealtime() {
           break;
         case "room.admin_added":
         case "room.admin_removed":
-          if (event.room_id === roomId) refetchAdminIds();
+          if (event.payload?.room_id === roomIdRef.current)
+            refetchAdminIdsRef.current?.();
           break;
       }
     };

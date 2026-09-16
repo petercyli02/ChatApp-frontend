@@ -1,20 +1,5 @@
-import {
-  acceptInvitation,
-  deleteInvitation,
-  getReceivedInvitations,
-  getSentInvitations,
-  type Invitation,
-} from "@/services/api";
-import { useEffect, useState } from "react";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { acceptInvitation, deleteInvitation } from "@/services/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "../ui/button";
 import { useInvitation } from "@/contexts/InvitationContext";
 import { useChatRoom } from "@/contexts/ChatRoomContext";
@@ -31,15 +16,21 @@ const InvitationList = ({ sentOrReceived }: Props) => {
 
   const onDeleteInvitation = async (invitationId: number) => {
     await deleteInvitation(invitationId);
+    console.log("Invitation deleted");
     await refresh();
+    console.log("Invitations refreshed");
+    console.log({ sentInvitations, receivedInvitations });
     await fetchRooms();
-  }
-  
+  };
+
   const onAcceptInvitation = async (invitationId: number, roomId: number) => {
     await acceptInvitation(invitationId, roomId);
+    console.log("Invitation accepted");
     await refresh();
+    console.log("Invitations refreshed");
+    console.log({ sentInvitations, receivedInvitations });
     await fetchRooms();
-  }
+  };
 
   return (
     <Card className="w-full max-h-48 overflow-y-auto bg-cyan-800 border-none">
@@ -123,7 +114,9 @@ const InvitationList = ({ sentOrReceived }: Props) => {
                     <Button
                       variant="ghost"
                       className="border-1 border-green-300 text-zinc-200 w-32 hover:bg-green-300"
-                      onClick={() => onAcceptInvitation(invitation.id, invitation.roomId)}
+                      onClick={() =>
+                        onAcceptInvitation(invitation.id, invitation.roomId)
+                      }
                     >
                       Accept
                     </Button>
