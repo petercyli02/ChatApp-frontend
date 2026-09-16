@@ -24,6 +24,7 @@ import {
 } from "@/services/api";
 import type { User } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { boolean } from "zod";
 
 const RoomMembership = () => {
   const { roomId, roomAdminIds, refetchAdminIds, fetchRooms } = useChatRoom();
@@ -105,7 +106,7 @@ const RoomMembership = () => {
                 <div key={member.id} className={rowClass}>
                   <div className="flex items-center place-content-between">
                     <DropdownMenuSub>
-                      <DropdownMenuSubTrigger chevron={false}>
+                      <DropdownMenuSubTrigger chevron={false} disabled={!!(user?.id && !roomAdminIds.includes(user.id))}>
                         <EllipsisVertical className="mr-3" />
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent collisionPadding={{ right: 1e6 }}>
