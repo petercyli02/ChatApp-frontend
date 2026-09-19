@@ -45,8 +45,8 @@ const AddMember = () => {
       <DialogContent className="sm:max-w-sm">
         {showSuccessMessage ? (
           <div className="flex flex-col items-center justify-center">
-            <CheckCircle2 className="w-10 h-10 text-emerald-400" />
-            <p className="text-emerald-400">Invitation sent successfully</p>
+            <CheckCircle2 className="w-10 h-10 text-success" />
+            <p className="text-success">Invitation sent successfully</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>

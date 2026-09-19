@@ -43,7 +43,7 @@ const ChatsList = ({ className }: Props) => {
           />
         ))
       ) : (
-        <div className="flex justify-center items-center h-full text-center text-gray-400">
+        <div className="flex justify-center items-center h-full text-center text-muted-foreground">
           <p>No chats found</p>
         </div>
       )}

@@ -4,7 +4,33 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#09090b" media="(prefers-color-scheme: dark)" />
     <title>frontend</title>
+    <script>
+      /*
+        Anti-FOUC (flash of unstyled content).
+
+        This runs synchronously, before the browser paints anything and long
+        before React boots. If we waited for a useEffect, a dark-mode user would
+        see a white flash on every page load. The logic is intentionally a
+        duplicate of ThemeContext's - keep THEME_STORAGE_KEY in sync.
+      */
+      (function () {
+        try {
+          var stored = localStorage.getItem("ui-theme");
+          var isDark =
+            stored === "dark" ||
+            ((stored === "system" || stored === null) &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          var root = document.documentElement;
+          root.classList.toggle("dark", isDark);
+          root.style.colorScheme = isDark ? "dark" : "light";
+        } catch (e) {
+          /* storage blocked - fall back to the light default */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

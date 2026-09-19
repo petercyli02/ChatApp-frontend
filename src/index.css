@@ -4,13 +4,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Custom base styles */
-@layer base {
-  body {
-    @apply bg-gray-900 text-gray-100 antialiased;
-  }
-}
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -50,6 +43,18 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* App-level semantic tokens (see :root / .dark below) */
+  --color-surface: var(--surface);
+  --color-surface-foreground: var(--surface-foreground);
+  --color-bubble: var(--bubble);
+  --color-bubble-foreground: var(--bubble-foreground);
+  --color-bubble-self: var(--bubble-self);
+  --color-bubble-self-foreground: var(--bubble-self-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
 }
 
 :root {
@@ -85,6 +90,26 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
+
+  /* Tells the browser to paint native UI (scrollbars, form controls,
+     date pickers) in the matching scheme. */
+  color-scheme: light;
+
+  /* Elevated panel sitting on top of --background */
+  --surface: oklch(0.968 0.001 286.375);
+  --surface-foreground: oklch(0.141 0.005 285.823);
+  /* Message bubble from another user */
+  --bubble: oklch(0.928 0.002 286.32);
+  --bubble-foreground: oklch(0.21 0.006 285.885);
+  /* Message bubble from the signed-in user */
+  --bubble-self: oklch(0.902 0.047 255.5);
+  --bubble-self-foreground: oklch(0.29 0.055 257);
+  /* Informational panel (invitations) */
+  --info: oklch(0.935 0.037 212);
+  --info-foreground: oklch(0.34 0.058 221);
+  /* Positive confirmation */
+  --success: oklch(0.58 0.132 155);
+  --success-foreground: oklch(0.985 0 0);
 }
 
 .dark {
@@ -119,6 +144,19 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
+
+  color-scheme: dark;
+
+  --surface: oklch(0.21 0.006 285.885);
+  --surface-foreground: oklch(0.985 0 0);
+  --bubble: oklch(0.315 0.006 286.033);
+  --bubble-foreground: oklch(0.985 0 0);
+  --bubble-self: oklch(0.402 0.072 258);
+  --bubble-self-foreground: oklch(0.97 0.014 255.5);
+  --info: oklch(0.386 0.062 221);
+  --info-foreground: oklch(0.945 0.028 212);
+  --success: oklch(0.723 0.148 158);
+  --success-foreground: oklch(0.22 0.036 158);
 }
 
 @layer base {
@@ -126,6 +164,35 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/**
+ * Theme cross-fade.
+ *
+ * `.theme-transition` is added to <html> by ThemeProvider for ~200ms around a
+ * theme switch, then removed. Scoping it this way means we pay for the
+ * transition only while switching - normal hover/focus states stay instant.
+ */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    fill 200ms ease,
+    stroke 200ms ease;
+  transition-delay: 0ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-transition,
+  .theme-transition *,
+  .theme-transition *::before,
+  .theme-transition *::after {
+    transition: none !important;
   }
 }

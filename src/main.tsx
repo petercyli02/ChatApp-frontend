@@ -11,6 +11,7 @@ import ChatsPage from "./pages/ChatsPage.tsx";
 import { InvitationProvider } from "./contexts/InvitationContext.tsx";
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { ChatRoomProvider } from "./contexts/ChatRoomContext.tsx";
+import { ThemeProvider } from "./contexts/ThemeContext.tsx";
 
 /**
  * LESSON: Router Setup with Auth
@@ -52,24 +53,30 @@ const router = createBrowserRouter([
 /**
  * LESSON: App Structure
  *
- * AuthProvider wraps everything, so any component can use useAuth()
+ * ThemeProvider is the outermost provider: it owns the `.dark` class on <html>
+ * and depends on nothing else, so nothing below it can ever render against the
+ * wrong theme.
  *
- * <AuthProvider>          ← Provides auth state to entire app
- *   <RouterProvider>      ← Handles routing
- *     <YourPages />       ← Can all use useAuth()
- *   </RouterProvider>
- * </AuthProvider>
+ * <ThemeProvider>         ← Owns light/dark, persists the choice
+ *   <AuthProvider>        ← Provides auth state to entire app
+ *     <RouterProvider>    ← Handles routing
+ *       <YourPages />     ← Can all use useAuth() / useTheme()
+ *     </RouterProvider>
+ *   </AuthProvider>
+ * </ThemeProvider>
  */
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <AuthProvider>
-    <ChatRoomProvider>
-        <InvitationProvider>
-          <TooltipProvider>
-            <RouterProvider router={router} />
-          </TooltipProvider>
-        </InvitationProvider>
-      </ChatRoomProvider>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <ChatRoomProvider>
+          <InvitationProvider>
+            <TooltipProvider>
+              <RouterProvider router={router} />
+            </TooltipProvider>
+          </InvitationProvider>
+        </ChatRoomProvider>
+      </AuthProvider>
+    </ThemeProvider>
   </StrictMode>,
 );

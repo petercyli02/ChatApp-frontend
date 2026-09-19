@@ -33,10 +33,10 @@ const InvitationList = ({ sentOrReceived }: Props) => {
   };
 
   return (
-    <Card className="w-full max-h-48 overflow-y-auto bg-cyan-800 border-none">
+    <Card className="w-full max-h-48 overflow-y-auto bg-info text-info-foreground border-none">
       <CardHeader className="mb-[-16px]">
         <CardTitle className="text-center">
-          <h1 className="font-sans text-lg text-cyan-100">
+          <h1 className="font-sans text-lg">
             {sentOrReceived === "sent"
               ? "Sent Invitations"
               : "Received Invitations"}
@@ -52,7 +52,7 @@ const InvitationList = ({ sentOrReceived }: Props) => {
                     key={invitation.id}
                     className="flex gap-6 items-center place-content-around"
                   >
-                    <p className="text-xs text-zinc-900">
+                    <p className="text-xs opacity-70">
                       {new Date(invitation.createdAt).toLocaleString(
                         undefined,
                         {
@@ -66,17 +66,17 @@ const InvitationList = ({ sentOrReceived }: Props) => {
                     </p>
                     <p>
                       You invited{" "}
-                      <span className="font-bold text-zinc-800">
+                      <span className="font-bold">
                         {invitation.receiverUsername}
                       </span>{" "}
                       to join room{" "}
-                      <span className="font-bold text-zinc-200">
+                      <span className="font-bold">
                         {invitation.roomName}
                       </span>
                     </p>
                     <Button
                       variant="ghost"
-                      className="border-1 border-red-300 text-zinc-200 w-42 hover:bg-red-300"
+                      className="border border-destructive text-current w-42 hover:bg-destructive hover:text-white"
                       onClick={() => onDeleteInvitation(invitation.id)}
                     >
                       Withdraw
@@ -90,7 +90,7 @@ const InvitationList = ({ sentOrReceived }: Props) => {
                     key={invitation.id}
                     className="flex gap-6 items-center place-content-around"
                   >
-                    <p className="text-xs text-zinc-900">
+                    <p className="text-xs opacity-70">
                       {new Date(invitation.createdAt).toLocaleString(
                         undefined,
                         {
@@ -103,17 +103,17 @@ const InvitationList = ({ sentOrReceived }: Props) => {
                       )}
                     </p>
                     <p>
-                      <span className="font-bold text-zinc-800">
+                      <span className="font-bold">
                         {invitation.senderUsername}
                       </span>{" "}
                       invites you to join room{" "}
-                      <span className="font-bold text-zinc-200">
+                      <span className="font-bold">
                         {invitation.roomName}
                       </span>
                     </p>
                     <Button
                       variant="ghost"
-                      className="border-1 border-green-300 text-zinc-200 w-32 hover:bg-green-300"
+                      className="border border-success text-current w-32 hover:bg-success hover:text-success-foreground"
                       onClick={() =>
                         onAcceptInvitation(invitation.id, invitation.roomId)
                       }
@@ -122,7 +122,7 @@ const InvitationList = ({ sentOrReceived }: Props) => {
                     </Button>
                     <Button
                       variant="ghost"
-                      className="border-1 border-red-300 text-zinc-200 w-28 hover:bg-red-300"
+                      className="border border-destructive text-current w-28 hover:bg-destructive hover:text-white"
                       onClick={() => onDeleteInvitation(invitation.id)}
                     >
                       Reject

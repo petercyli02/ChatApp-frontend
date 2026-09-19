@@ -73,7 +73,7 @@ const LoginForm = () => {
       <CardContent>
         <form id="login-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && (
-            <div className="bg-red-500/10 border border-red-500 text-red-500 px-4 py-2 rounded-md text-sm">
+            <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-2 rounded-md text-sm">
               {error}
             </div>
           )}
@@ -92,7 +92,7 @@ const LoginForm = () => {
                   aria-invalid={!!errors.email}
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email.message}</p>
+                  <p className="text-sm text-destructive">{errors.email.message}</p>
                 )}
               </div>
             )}
@@ -113,7 +113,7 @@ const LoginForm = () => {
                   aria-invalid={!!errors.password}
                 />
                 {errors.password && (
-                  <p className="text-sm text-red-500">{errors.password.message}</p>
+                  <p className="text-sm text-destructive">{errors.password.message}</p>
                 )}
               </div>
             )}

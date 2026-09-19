@@ -8,6 +8,7 @@ import { updateUser } from "@/services/api";
 import InvitationList from "@/components/custom/InvitationList";
 import { useInvitation } from "@/contexts/InvitationContext";
 import { useRealtime } from "@/hooks/useWebSocket";
+import ThemeToggle from "@/components/custom/ThemeToggle";
 
 /**
  * LESSON: Using Auth Context in a Protected Page
@@ -40,16 +41,17 @@ const ChatsPage = () => {
   console.log({ user });
 
   return (
-    <div className="h-screen bg-gray-900 text-white flex flex-col">
-      <header className="flex items-center px-6 py-3 shrink-0">
+    <div className="h-screen bg-background text-foreground flex flex-col">
+      <header className="flex items-center justify-between px-6 py-3 shrink-0">
         <Button
           onClick={logout}
-          variant="ghost"
+          variant="secondary"
           size="lg"
-          className="bg-zinc-200 hover:bg-zinc-500 cursor-pointer"
+          className="cursor-pointer"
         >
-          <p className="text-zinc-900">Logout</p>
+          Logout
         </Button>
+        <ThemeToggle />
       </header>
       <main className="px-6 pb-4 grow min-h-0">
         <ChatArea />
@@ -57,10 +59,10 @@ const ChatsPage = () => {
 
       {/* User info card */}
       <aside className="px-6 pb-6 shrink-0">
-        <div className="bg-gray-800 rounded-lg p-4 flex gap-8">
-          <ul className="text-sm text-gray-400 space-y-2 min-w-72">
+        <div className="bg-surface text-surface-foreground rounded-lg p-4 flex gap-8">
+          <ul className="text-sm text-muted-foreground space-y-2 min-w-72">
             <li className="flex justify-between">
-              <h2 className="font-semibold text-white align-middle mt-2">
+              <h2 className="font-semibold text-foreground align-middle mt-2">
                 Your Profile
               </h2>
               {isEditing ? (
@@ -68,7 +70,7 @@ const ChatsPage = () => {
                   <Button
                     size="icon-lg"
                     variant="ghost"
-                    className="hover:bg-zinc-500 cursor-pointer items-center"
+                    className="hover:bg-accent hover:text-accent-foreground cursor-pointer items-center"
                     onClick={() => setIsEditing(false)}
                   >
                     <X />
@@ -76,7 +78,7 @@ const ChatsPage = () => {
                   <Button
                     size="icon-lg"
                     variant="ghost"
-                    className="hover:bg-zinc-500 cursor-pointer items-center"
+                    className="hover:bg-accent hover:text-accent-foreground cursor-pointer items-center"
                     onClick={saveEdit}
                   >
                     <Save />
@@ -87,7 +89,7 @@ const ChatsPage = () => {
                   onClick={() => setIsEditing(!isEditing)}
                   variant="ghost"
                   size="icon-lg"
-                  className="hover:bg-zinc-500 cursor-pointer items-center"
+                  className="hover:bg-accent hover:text-accent-foreground cursor-pointer items-center"
                 >
                   <Pencil />
                 </Button>
@@ -100,21 +102,21 @@ const ChatsPage = () => {
                   type="text"
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
-                  className="bg-zinc-800 text-white rounded-md p-2"
+                  className="bg-background text-foreground border border-input rounded-md p-2"
                 />
               ) : (
-                <span className="font-semibold text-white">
+                <span className="font-semibold text-foreground">
                   {user?.username}
                 </span>
               )}
             </li>
             <li className="flex justify-between">
               Email:{" "}
-              <span className="font-semibold text-white ">{user?.email}</span>
+              <span className="font-semibold text-foreground">{user?.email}</span>
             </li>
             <li className="flex justify-between">
               Member since:{" "}
-              <span className="font-semibold text-white">
+              <span className="font-semibold text-foreground">
                 {user?.createdAt
                   ? new Date(user.createdAt).toLocaleDateString()
                   : "N/A"}

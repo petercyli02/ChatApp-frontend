@@ -176,9 +176,9 @@ const ChatArea = () => {
         onDoubleClick={() => setSidebarWidth(SIDEBAR_DEFAULT)}
         className="group relative w-3 shrink-0 cursor-col-resize touch-none"
       >
-        <div className="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 rounded-full bg-zinc-700 group-hover:bg-zinc-500 group-active:bg-zinc-400" />
+        <div className="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 rounded-full bg-border transition-colors group-hover:bg-muted-foreground group-active:bg-primary" />
       </div>
-      <div className="flex flex-col flex-1 min-w-0 bg-gray-800 rounded-3xl px-4 pt-4">
+      <div className="flex flex-col flex-1 min-w-0 bg-surface text-surface-foreground rounded-3xl px-4 pt-4">
         {effectiveRoomId ? (
           <>
             <div className="flex place-content-between items-center">
@@ -203,7 +203,7 @@ const ChatArea = () => {
             />
           </>
         ) : (
-          <div className="flex flex-1 items-center justify-center font-semibold">
+          <div className="flex flex-1 items-center justify-center font-semibold text-muted-foreground">
             No chat selected
           </div>
         )}

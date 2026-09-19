@@ -46,7 +46,7 @@ export function MessagePopover({
           <Ellipsis />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="flex w-40 flex-col p-1 bg-zinc-200">
+      <PopoverContent className="flex w-40 flex-col p-1">
         {hidden ? (
           <Button
             variant="ghost"

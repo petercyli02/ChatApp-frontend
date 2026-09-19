@@ -91,7 +91,7 @@ const ChatMessages = ({
       )}
     >
       {actionError && (
-        <p className="text-sm text-red-400">{actionError}</p>
+        <p className="text-sm text-destructive">{actionError}</p>
       )}
       {messages.map((message) => {
         const fromSelf = message.senderId === user?.id;
@@ -103,24 +103,24 @@ const ChatMessages = ({
             <Card
               key={message.id ?? message.createdAt}
               className={cn(
-                "gap-2 py-2 w-fit max-w-[75%] border-none bg-gray-700/70 shadow-none",
+                "gap-2 py-2 w-fit max-w-[75%] border-none bg-muted/70 shadow-none",
                 fromSelf && "ml-auto",
               )}
             >
-              <CardContent className="text-sm text-gray-400 flex items-center gap-2 py-1">
+              <CardContent className="text-sm text-muted-foreground flex items-center gap-2 py-1">
                 <EyeOff className="h-4 w-4 shrink-0" />
                 <span className="italic">You hid this message</span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-auto px-1 text-xs text-gray-300 hover:text-white"
+                  className="h-auto px-1 text-xs text-muted-foreground hover:text-foreground"
                   onClick={() => void handleUnhide(message.id!).catch(() => undefined)}
                 >
                   Unhide
                 </Button>
               </CardContent>
-              <CardFooter className="text-xs text-gray-500 self-end py-0">
+              <CardFooter className="text-xs text-muted-foreground self-end py-0">
                 {new Date(message.createdAt ?? "").toLocaleString()}
                 <MessagePopover
                   fromSelf={fromSelf}
@@ -138,21 +138,21 @@ const ChatMessages = ({
         return (
           <Card
             key={message.id ?? message.createdAt}
-            className={
-              "bg-gray-500 gap-2 py-3 w-3/4" +
-              (fromSelf ? " ml-auto bg-slate-400" : "")
-            }
+            className={cn(
+              "bg-bubble text-bubble-foreground gap-2 py-3 w-3/4 border-none",
+              fromSelf && "ml-auto bg-bubble-self text-bubble-self-foreground",
+            )}
           >
-            <CardHeader className="text-sm font-semibold text-gray-900 flex space-between">
+            <CardHeader className="text-sm font-semibold flex space-between">
               {!fromSelf && <p>{message.senderUsername}</p>}
             </CardHeader>
-            <CardContent className="text-md text-gray-800">
+            <CardContent className="text-md">
               {isEditing ? (
                 <div className="flex flex-col gap-2">
                   <Input
                     value={editedContent}
                     onChange={(e) => setEditedContent(e.target.value)}
-                    className="bg-white text-gray-900"
+                    className="bg-background text-foreground"
                     autoFocus
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -185,10 +185,10 @@ const ChatMessages = ({
                 <p>{message.content}</p>
               )}
             </CardContent>
-            <CardFooter className="text-xs text-gray-800 self-end">
+            <CardFooter className="text-xs opacity-70 self-end">
               {new Date(message.createdAt ?? "").toLocaleString()}
               {message.lastEdited && (
-                <span className="ml-2 italic text-gray-700">(edited)</span>
+                <span className="ml-2 italic">(edited)</span>
               )}
               <MessagePopover
                 fromSelf={fromSelf}

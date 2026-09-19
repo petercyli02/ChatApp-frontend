@@ -20,7 +20,7 @@ const RoomListItem = ({ room, onLeaveRoom }: Props) => {
   const { name, description, createdAt, memberCount } = room;
   
   return (
-    <Card className="bg-slate-300 hover:bg-slate-200 cursor-pointer py-1 relative min-w-0 overflow-hidden">
+    <Card className="hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer py-1 relative min-w-0 overflow-hidden">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -38,8 +38,12 @@ const RoomListItem = ({ room, onLeaveRoom }: Props) => {
           <DropdownMenuItem>
             <Archive /> Archive
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onLeaveRoom(room.id)} className="text-red-500 hover:cursor-pointer">
-            <DoorOpen color="red" /> Leave Room
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => onLeaveRoom(room.id)}
+            className="hover:cursor-pointer"
+          >
+            <DoorOpen /> Leave Room
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -49,9 +53,9 @@ const RoomListItem = ({ room, onLeaveRoom }: Props) => {
       >
         <h3 className="font-semibold truncate">{name}</h3>
         {description && (
-          <p className="text-sm text-gray-500 truncate">{description}</p>
+          <p className="text-sm text-muted-foreground truncate">{description}</p>
         )}
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500 mt-2">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
           <span>{memberCount} members</span>
           <span>Created {new Date(createdAt).toLocaleDateString()}</span>
         </div>

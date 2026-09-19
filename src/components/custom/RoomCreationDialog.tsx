@@ -31,7 +31,7 @@ const RoomCreationDialog = ({ onRoomCreate }: Props) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full bg-gray-800 hover:bg-gray-700 cursor-pointer">
+        <Button variant="outline" className="w-full cursor-pointer">
           <PlusIcon className="w-4 h-4" /> Create New Room
         </Button>
       </DialogTrigger>
