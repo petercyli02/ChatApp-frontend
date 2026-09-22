@@ -4,6 +4,7 @@
 
 import { auth } from "@/firebase";
 import type { Message } from "@/hooks/useWebSocket";
+import { ApiError } from "@/lib/apiError";
 
 const API_BASE = import.meta.env.VITE_API_URL + "/api";
 
@@ -68,6 +69,54 @@ async function fetchWithAuth(
   return response;
 }
 
+/**
+ * LESSON: One function owns every request's error handling.
+ *
+ * Every endpoint below goes through here, so errors are handled identically
+ * everywhere:
+ *   - network failure (offline, server down) -> ApiError, code "network_error"
+ *   - non-2xx response                       -> ApiError with the server's code/message
+ *   - success                                -> parsed, camelCased body
+ *
+ * Note what's missing: no try/catch "to show the error". This layer only
+ * *translates* failures into ApiError. Deciding what the user sees is the
+ * component's job - see getErrorMessage() in lib/errorMessages.ts.
+ */
+async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetchWithAuth(endpoint, options);
+  } catch {
+    // fetch only rejects when there's no response at all.
+    throw new ApiError(0, "network_error", "Couldn't reach the server.");
+  }
+
+  if (!response.ok) {
+    throw await toApiError(response);
+  }
+  if (response.status === 204) {
+    return undefined as T;
+  }
+  return transformKeys<T>(await response.json());
+}
+
+/** Reads the backend's {"error": {code, message, details}} body. */
+async function toApiError(response: Response): Promise<ApiError> {
+  try {
+    const { error } = await response.json();
+    if (typeof error?.code === "string") {
+      return new ApiError(response.status, error.code, error.message, error.details);
+    }
+  } catch {
+    // Body wasn't JSON (a proxy error page, a crashed server...). Fall through.
+  }
+  return new ApiError(
+    response.status,
+    `http_${response.status}`,
+    "Something went wrong. Please try again.",
+  );
+}
+
 // ==================== Auth API ====================
 
 export interface User {
@@ -80,18 +129,12 @@ export interface User {
   lastSeen: string;
 }
 
-export async function getCurrentUser(): Promise<User> {
-  const response = await fetchWithAuth("/auth/me");
-
-  if (!response.ok) {
-    throw new Error("Failed to get user");
-  }
-
-  const data = await response.json();
-  return transformKeys<User>(data);
+export function getCurrentUser(): Promise<User> {
+  return request<User>("/auth/me");
 }
 
 export async function logout(): Promise<void> {
+  // Best effort: signing out locally must succeed even if this call fails.
   await fetchWithAuth("/auth/logout", { method: "POST" });
 }
 
@@ -113,98 +156,44 @@ export interface InvitationAnswerResponse {
 }
 
 export async function updateUser(username: string): Promise<void> {
-  const response = await fetchWithAuth("/users/update", {
+  await request("/users/update", {
     method: "POST",
     body: JSON.stringify({ username }),
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to update user.");
-  }
-
-  const data = await response.json();
-  console.log({ response: data });
-  return transformKeys<void>(data);
 }
 
-export async function inviteUser(
-  email: string,
-  room_id: number,
-): Promise<void> {
-  const response = await fetchWithAuth("/users/invite", {
+export function inviteUser(email: string, roomId: number): Promise<Invitation> {
+  return request<Invitation>("/users/invite", {
     method: "POST",
-    body: JSON.stringify({ email, room_id }),
+    body: JSON.stringify({ email, room_id: roomId }),
   });
-
-  if (!response.ok) {
-    throw new Error("Failed to invite user");
-  }
-
-  const data = await response.json();
-  return transformKeys<void>(data);
 }
 
-export async function getReceivedInvitations(): Promise<Invitation[]> {
-  const response = await fetchWithAuth("/users/invitations/received", {
-    method: "GET",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to get received invitations");
-  }
-
-  const data = await response.json();
-  return transformKeys<Invitation[]>(data);
+export function getReceivedInvitations(): Promise<Invitation[]> {
+  return request<Invitation[]>("/users/invitations/received");
 }
 
-export async function getSentInvitations(): Promise<Invitation[]> {
-  const response = await fetchWithAuth("/users/invitations/sent", {
-    method: "GET",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to get sent invitations");
-  }
-
-  const data = await response.json();
-  return transformKeys<Invitation[]>(data);
+export function getSentInvitations(): Promise<Invitation[]> {
+  return request<Invitation[]>("/users/invitations/sent");
 }
 
-export async function deleteInvitation(
+export function deleteInvitation(
   invitationId: number,
 ): Promise<InvitationAnswerResponse> {
-  const response = await fetchWithAuth(
+  return request<InvitationAnswerResponse>(
     `/users/invitations/delete/${invitationId}`,
-    {
-      method: "DELETE",
-    },
+    { method: "DELETE" },
   );
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || "Failed to delete invitation");
-  }
-
-  const data = await response.json();
-  return transformKeys<InvitationAnswerResponse>(data);
 }
 
-export async function acceptInvitation(
+/** The server reads the room from the invitation, so only the id is sent. */
+export function acceptInvitation(
   invitationId: number,
-  roomId: number,
 ): Promise<InvitationAnswerResponse> {
-  const response = await fetchWithAuth("/users/invitations/accept", {
+  return request<InvitationAnswerResponse>("/users/invitations/accept", {
     method: "POST",
-    body: JSON.stringify({ invitation_id: invitationId, room_id: roomId }),
+    body: JSON.stringify({ invitation_id: invitationId }),
   });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || "Failed to accept invitation");
-  }
-
-  const data = await response.json();
-  return transformKeys<InvitationAnswerResponse>(data);
 }
 
 // ==================== Rooms API ====================
@@ -219,140 +208,49 @@ export interface Room {
   adminIds: number[];
 }
 
-export async function getRooms(): Promise<Room[]> {
-  const response = await fetchWithAuth(`/rooms`);
-
-  if (!response.ok) {
-    throw new Error("Failed to get rooms");
-  }
-
-  const data = await response.json();
-  console.log({ getRoomsData: data });
-  return transformKeys<Room[]>(data);
+export function getRooms(): Promise<Room[]> {
+  return request<Room[]>("/rooms");
 }
 
-export async function createRoom(
-  name: string,
-  description?: string,
-): Promise<Room> {
-  const response = await fetchWithAuth("/rooms", {
+export function createRoom(name: string, description?: string): Promise<Room> {
+  return request<Room>("/rooms", {
     method: "POST",
-    body: JSON.stringify({
-      name,
-      description,
-    }),
+    body: JSON.stringify({ name, description }),
   });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || "Failed to create room");
-  }
-
-  const data = await response.json();
-  return transformKeys<Room>(data);
 }
 
-export async function getRoomMembers(roomId: number): Promise<User[]> {
-  const response = await fetchWithAuth(`/rooms/${roomId}/members`);
-  if (!response.ok) {
-    throw new Error("Failed to get room members");
-  }
-
-  const data = await response.json();
-  console.log({ data });
-  return transformKeys<User[]>(data);
+export function getRoomMembers(roomId: number): Promise<User[]> {
+  return request<User[]>(`/rooms/${roomId}/members`);
 }
 
-export async function addMemberToRoom(
-  roomId: number,
-  email: string,
-): Promise<void> {
-  console.log("#3");
-  const response = await fetchWithAuth(
-    `/rooms/${roomId}/add?email=${encodeURIComponent(email)}`,
-    {
-      method: "POST",
-    },
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to add member to room");
-  }
+export async function addMemberToRoom(roomId: number, email: string): Promise<void> {
+  await request(`/rooms/${roomId}/add?email=${encodeURIComponent(email)}`, {
+    method: "POST",
+  });
 }
 
 export async function joinRoom(roomId: number): Promise<void> {
-  const response = await fetchWithAuth(`/rooms/${roomId}/join`, {
-    method: "POST",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to join room");
-  }
+  await request(`/rooms/${roomId}/join`, { method: "POST" });
 }
 
 export async function leaveRoom(roomId: number): Promise<void> {
-  const response = await fetchWithAuth(`/rooms/${roomId}/leave`, {
-    method: "POST",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to leave room");
-  }
-
-  const data = await response.json();
-  return transformKeys<void>(data);
+  await request(`/rooms/${roomId}/leave`, { method: "POST" });
 }
 
-export async function removeMemberFromRoom(
-  roomId: number,
-  userId: number,
-): Promise<void> {
-  const response = await fetchWithAuth(`/rooms/${roomId}/remove/${userId}`, {
-    method: "POST",
-  });
-  if (!response.ok) {
-    throw new Error("Failed to remove member from room");
-  }
-  const data = await response.json();
-  return transformKeys<void>(data);
+export async function removeMemberFromRoom(roomId: number, userId: number): Promise<void> {
+  await request(`/rooms/${roomId}/remove/${userId}`, { method: "POST" });
 }
 
-export async function getRoomAdmins(roomId: number): Promise<number[]> {
-  const response = await fetchWithAuth(`/rooms/${roomId}/admins`);
-  if (!response.ok) {
-    throw new Error("Failed to get room admins");
-  }
-  const data = await response.json();
-  return transformKeys<number[]>(data);
+export function getRoomAdmins(roomId: number): Promise<number[]> {
+  return request<number[]>(`/rooms/${roomId}/admins`);
 }
 
-export async function addAdminToRoom(
-  roomId: number,
-  userId: number,
-): Promise<void> {
-  const response = await fetchWithAuth(`/rooms/${roomId}/add_admin/${userId}`, {
-    method: "POST",
-  });
-  if (!response.ok) {
-    throw new Error("Failed to add admin to room");
-  }
-  const data = await response.json();
-  console.log({ addAdminToRoomData: data });
-  return transformKeys<void>(data);
+export async function addAdminToRoom(roomId: number, userId: number): Promise<void> {
+  await request(`/rooms/${roomId}/add_admin/${userId}`, { method: "POST" });
 }
 
-export async function removeAdminFromRoom(
-  roomId: number,
-  userId: number,
-): Promise<void> {
-  const response = await fetchWithAuth(`/rooms/${roomId}/remove_admin/${userId}`, {
-    method: "POST",
-  });
-  if (!response.ok) {
-    throw new Error("Failed to remove admin from room");
-  }
-  const data = await response.json();
-  return transformKeys<void>(data);
+export async function removeAdminFromRoom(roomId: number, userId: number): Promise<void> {
+  await request(`/rooms/${roomId}/remove_admin/${userId}`, { method: "POST" });
 }
 
 // ==================== Messages API ====================
@@ -362,69 +260,39 @@ export async function getRoomMessages(
   limit = 50,
   offset = 0,
 ): Promise<Message[]> {
-  const response = await fetchWithAuth(
+  const messages = await request<Message[]>(
     `/messages/room/${roomId}?limit=${limit}&offset=${offset}`,
   );
-
-  if (!response.ok) {
-    throw new Error("Failed to get messages");
-  }
-
-  const data = await response.json();
-  return transformKeys<Message[]>(data).map((message) => ({
+  return messages.map((message) => ({
     ...message,
     type: message.type ?? "message",
   }));
 }
 
-async function throwIfNotOk(
-  response: Response,
-  fallback: string,
-): Promise<void> {
-  if (response.ok) return;
-  let message = fallback;
-  try {
-    const error = await response.json();
-    if (typeof error?.detail === "string") {
-      message = error.detail;
-    }
-  } catch {
-    // Keep the fallback if the body is not JSON.
-  }
-  throw new Error(message);
-}
-
-export async function editMessage(
-  messageId: number,
-  content: string,
-): Promise<void> {
-  const response = await fetchWithAuth(`/messages/edit`, {
+export async function editMessage(messageId: number, content: string): Promise<void> {
+  await request("/messages/edit", {
     method: "POST",
     body: JSON.stringify({ messageId, content }),
   });
-  await throwIfNotOk(response, "Failed to edit message");
 }
 
 export async function deleteMessage(messageId: number): Promise<void> {
-  const response = await fetchWithAuth(`/messages/delete`, {
+  await request("/messages/delete", {
     method: "POST",
     body: JSON.stringify({ messageId }),
   });
-  await throwIfNotOk(response, "Failed to delete message");
 }
 
 export async function hideMessage(messageId: number): Promise<void> {
-  const response = await fetchWithAuth(`/messages/hide`, {
+  await request("/messages/hide", {
     method: "POST",
     body: JSON.stringify({ messageId }),
   });
-  await throwIfNotOk(response, "Failed to hide message");
 }
 
 export async function unhideMessage(messageId: number): Promise<void> {
-  const response = await fetchWithAuth(`/messages/unhide`, {
+  await request("/messages/unhide", {
     method: "POST",
     body: JSON.stringify({ messageId }),
   });
-  await throwIfNotOk(response, "Failed to unhide message");
 }

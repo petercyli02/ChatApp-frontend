@@ -23,8 +23,8 @@ const InvitationList = ({ sentOrReceived }: Props) => {
     await fetchRooms();
   };
 
-  const onAcceptInvitation = async (invitationId: number, roomId: number) => {
-    await acceptInvitation(invitationId, roomId);
+  const onAcceptInvitation = async (invitationId: number) => {
+    await acceptInvitation(invitationId);
     console.log("Invitation accepted");
     await refresh();
     console.log("Invitations refreshed");
@@ -114,9 +114,7 @@ const InvitationList = ({ sentOrReceived }: Props) => {
                     <Button
                       variant="ghost"
                       className="border border-success text-current w-32 hover:bg-success hover:text-success-foreground"
-                      onClick={() =>
-                        onAcceptInvitation(invitation.id, invitation.roomId)
-                      }
+                      onClick={() => onAcceptInvitation(invitation.id)}
                     >
                       Accept
                     </Button>
