@@ -10,7 +10,7 @@ function App() {
       <ThemeToggle className="absolute top-6 right-6" />
       <BotMessageSquare size={256} className="mb-8 text-primary" />
       <h1 className="text-4xl font-bold mb-4">
-        Chat Application
+        ChatApp
       </h1>
       <p className="text-muted-foreground mb-8">
         Real-time chat with FastAPI + WebSockets
