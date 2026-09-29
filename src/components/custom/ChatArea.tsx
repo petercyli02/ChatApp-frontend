@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import ChatInput from "./ChatInput";
 import ChatMessages from "./ChatMessages";
 import ChatsList from "./ChatsList";
@@ -13,6 +20,8 @@ import { useWebSocket, type Message } from "@/hooks/useWebSocket";
 import { useChatRoom } from "@/contexts/ChatRoomContext";
 import AddMember from "./AddMember";
 import RoomMembership from "./RoomMembership";
+import { Button } from "../ui/button";
+import { MoveDown } from "lucide-react";
 
 const SIDEBAR_DEFAULT = 340;
 const SIDEBAR_MIN = 260;
@@ -30,13 +39,15 @@ function loadSidebarWidth(): number {
 const ChatArea = () => {
   const { roomId, roomName } = useChatRoom();
   const effectiveRoomId = roomId ?? 0;
-  const [initialMessages, setInitialMessages] = useState<Message[]>([]);
+  const [existingMessages, setExistingMessages] = useState<Message[]>([]);
+  const [messageOffset, setMessageOffset] = useState(0);
   const [removedIds, setRemovedIds] = useState<Set<number>>(new Set());
   const [hiddenIds, setHiddenIds] = useState<Set<number>>(new Set());
-  const [edits, setEdits] = useState<Record<number, { content: string; lastEdited: string }>>(
-    {},
-  );
+  const [edits, setEdits] = useState<
+    Record<number, { content: string; lastEdited: string }>
+  >({});
   const [sidebarWidth, setSidebarWidth] = useState(loadSidebarWidth);
+  const [showJumpToLatestButton, setShowJumpToLatestButton] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const draggingRef = useRef(false);
 
@@ -50,7 +61,8 @@ const ChatArea = () => {
     setEdits({});
     if (effectiveRoomId) {
       getRoomMessages(effectiveRoomId).then((messages) => {
-        setInitialMessages(messages);
+        setExistingMessages(messages);
+        setMessageOffset(messageOffset + messages.length);
         setHiddenIds(
           new Set(
             messages
@@ -60,7 +72,7 @@ const ChatArea = () => {
         );
       });
     } else {
-      setInitialMessages([]);
+      setExistingMessages([]);
     }
   }, [effectiveRoomId]);
 
@@ -70,7 +82,7 @@ const ChatArea = () => {
 
   const messages: Message[] = useMemo(() => {
     const rest = new Set<string>();
-    initialMessages.forEach((message) =>
+    existingMessages.forEach((message) =>
       rest.add(`${message.createdAt}-${message.senderId}`),
     );
     const fromWs = wsMessages.filter(
@@ -79,7 +91,7 @@ const ChatArea = () => {
         message.roomId === effectiveRoomId &&
         !rest.has(`${message.createdAt}-${message.senderId}`),
     );
-    return [...initialMessages, ...fromWs]
+    return [...existingMessages, ...fromWs]
       .filter((message) => message.id != null && !removedIds.has(message.id))
       .map((message) => {
         const edit = message.id != null ? edits[message.id] : undefined;
@@ -90,7 +102,14 @@ const ChatArea = () => {
           hidden,
         };
       });
-  }, [initialMessages, wsMessages, effectiveRoomId, removedIds, edits, hiddenIds]);
+  }, [
+    existingMessages,
+    wsMessages,
+    effectiveRoomId,
+    removedIds,
+    edits,
+    hiddenIds,
+  ]);
 
   const onEditMessage = async (messageId: number, content: string) => {
     await editMessage(messageId, content);
@@ -143,15 +162,60 @@ const ChatArea = () => {
     [clampWidth],
   );
 
-  const onResizeEnd = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!draggingRef.current) return;
-    draggingRef.current = false;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
+  const onResizeEnd = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!draggingRef.current) return;
+      draggingRef.current = false;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    },
+    [],
+  );
+
+  const scrollerRef = useRef<HTMLDivElement>(null!);
+  const loadingRef = useRef(false);
+  const doneRef = useRef(false);
+  const restoreHeightRef = useRef<number | null>(null);
+
+  function onScroll() {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setShowJumpToLatestButton(el.scrollTop < el.scrollHeight - 1500);
+    if (el.scrollTop <= 80) loadOlder();
+  }
+
+  function onWheel(e: React.WheelEvent) {
+    const el = scrollerRef.current;
+    if (!el) return;
+    if (el.scrollTop <= 0 && e.deltaY < 0) loadOlder();
+  }
+
+  async function loadOlder() {
+    if (loadingRef.current || doneRef.current) return;
+    loadingRef.current = true;
+    try {
+      restoreHeightRef.current = scrollerRef.current?.scrollHeight ?? 0;
+      const older = await getRoomMessages(effectiveRoomId, 50, messageOffset);
+      setExistingMessages((prev) => [...older, ...prev]);
+      setMessageOffset(messageOffset + older.length);
+      doneRef.current = older.length < 50;
+    } catch (error) {
+      console.error(error);
+    } finally {
+      loadingRef.current = false;
     }
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-  }, []);
+  }
+
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    const prevHeight = restoreHeightRef.current;
+    if (!el || prevHeight === null) return;
+    el.scrollTop += el.scrollHeight - prevHeight;
+    restoreHeightRef.current = null;
+  }, [existingMessages]);
 
   return (
     <div ref={containerRef} className="flex h-full min-h-0">
@@ -189,6 +253,10 @@ const ChatArea = () => {
               <AddMember />
             </div>
             <ChatMessages
+              scrollerRef={scrollerRef}
+              loadingRef={loadingRef}
+              onScroll={onScroll}
+              onWheel={onWheel}
               className="grow-20"
               messages={messages}
               onEditMessage={onEditMessage}
@@ -196,11 +264,28 @@ const ChatArea = () => {
               onHideMessage={onHideMessage}
               onUnhideMessage={onUnhideMessage}
             />
-            <ChatInput
-              className="grow-1 mt-4 ml-4"
-              roomId={effectiveRoomId}
-              onMessageSend={sendMessage}
-            />
+            <div className="relative">
+              {showJumpToLatestButton && (
+                <Button
+                  className="absolute bottom-16 left-1/2 w-fit self-center -translate-x-1/2"
+                  size="lg"
+                  variant="secondary"
+                  onClick={() => {
+                    scrollerRef.current?.scrollTo({
+                      top: scrollerRef.current?.scrollHeight,
+                      behavior: "smooth",
+                    });
+                  }}
+                >
+                  <MoveDown /> Scroll to latest
+                </Button>
+              )}
+              <ChatInput
+                className="grow-1 mt-4 ml-4"
+                roomId={effectiveRoomId}
+                onMessageSend={sendMessage}
+              />
+            </div>
           </>
         ) : (
           <div className="flex flex-1 items-center justify-center font-semibold text-muted-foreground">

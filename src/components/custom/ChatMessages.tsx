@@ -7,10 +7,15 @@ import { useState } from "react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { EyeOff } from "lucide-react";
+import { Spinner } from "../ui/spinner";
 
 interface Props {
   className?: string;
   messages: Message[];
+  scrollerRef: React.RefObject<HTMLDivElement>;
+  loadingRef: React.RefObject<Boolean>;
+  onScroll: () => void;
+  onWheel: (e: React.WheelEvent) => void;
   onEditMessage: (messageId: number, content: string) => Promise<void>;
   onDeleteMessage: (messageId: number) => Promise<void>;
   onHideMessage: (messageId: number) => Promise<void>;
@@ -24,6 +29,10 @@ const ChatMessages = ({
   onDeleteMessage,
   onHideMessage,
   onUnhideMessage,
+  scrollerRef,
+  loadingRef,
+  onScroll,
+  onWheel,
 }: Props) => {
   const { user } = useAuth();
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -89,9 +98,17 @@ const ChatMessages = ({
         "flex flex-col gap-4 overflow-y-auto min-h-0 flex-1 p-6",
         className,
       )}
+      ref={scrollerRef}
+      onWheel={onWheel}
+      onScroll={onScroll}
     >
       {actionError && (
         <p className="text-sm text-destructive">{actionError}</p>
+      )}
+      {loadingRef.current && (
+        <div className="flex justify-center items-center h-full">
+          <Spinner className="h-4 w-4 animate-spin" />
+        </div>
       )}
       {messages.map((message) => {
         const fromSelf = message.senderId === user?.id;
